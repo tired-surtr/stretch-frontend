@@ -1,37 +1,97 @@
 // src/components/BookingPage.tsx
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import axios from "axios";
+import api from "../api/api";
 import "./BookingPage.css";
-
-/**
- * BookingPage (refactored)
- * - Seat tiles use class names so we can style them like session tiles
- * - Behavior and accessibility preserved
- */
 
 type Session = {
   id: number;
-  title: string;
-  session_date: string;
-  start_time: string;
-  capacity: number;
+  title?: string;
+  session_date?: string | number | null;
+  start_time?: string | null;
+  capacity?: number | string | null;
   bookedSeats?: number[];
+  [k: string]: any;
 };
 
 type BookingResult = {
   status: "CONFIRMED" | "FAILED" | string;
 };
 
-async function fetchSessionByIdRemote(sessionId: number): Promise<Session> {
-  const res = await axios.get(`/api/sessions/${sessionId}`);
-  return res.data as Session;
+async function fetchSessionByIdRemote(sessionId: number): Promise<any> {
+  const res = await api.get(`/sessions/${sessionId}`);
+  return res.data;
 }
 
 async function createBookingRemote(sessionId: number, seat: number): Promise<BookingResult> {
   const payload = { session_id: sessionId, seat_number: seat };
-  const res = await axios.post("/api/bookings", payload);
+  const res = await api.post("/bookings", payload);
   return res.data as BookingResult;
+}
+
+/* Helpers */
+function toNumberSafe(val: any, fallback = 0) {
+  if (val === null || val === undefined || val === "") return fallback;
+  const n = Number(val);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function normalizeBookedSeatsFromApi(data: any): number[] {
+  let result: number[] = [];
+  if (Array.isArray(data.bookedSeats)) {
+    result = data.bookedSeats.map((b: any) => toNumberSafe(b, NaN)).filter(Number.isFinite);
+  } else if (Array.isArray(data.booked_seats)) {
+    result = data.booked_seats.map((b: any) => toNumberSafe(b, NaN)).filter(Number.isFinite);
+  } else if (Array.isArray(data.bookings)) {
+    result = data.bookings
+      .map((b: any) => {
+        if (typeof b === "number") return toNumberSafe(b, NaN);
+        if (b && (b.seat_number || b.seat)) return toNumberSafe(b.seat_number ?? b.seat, NaN);
+        return NaN;
+      })
+      .filter(Number.isFinite);
+  } else if (Array.isArray(data.attendees)) {
+    result = data.attendees
+      .map((a: any) => toNumberSafe(a.seat_number ?? a.seat ?? a.id, NaN))
+      .filter(Number.isFinite);
+  }
+  return result;
+}
+
+function normalizeCapacityFromApi(data: any): number {
+  const raw = data.capacity ?? data.max_capacity ?? data.size ?? data.totalSeats ?? data.total_seats;
+  return toNumberSafe(raw, 0);
+}
+
+function formatSessionDateDisplay(s: any) {
+  const candidates = [
+    s?.session_date,
+    s?.start_time,
+    s?.startTime,
+    s?.date,
+    s?.datetime,
+    s?.startsAt,
+  ];
+  const raw = candidates.find((c) => c !== undefined && c !== null && c !== "");
+  if (!raw) return "Invalid Date";
+  let d = new Date(raw as any);
+  if (Number.isNaN(d.getTime()) && typeof raw === "number") {
+    d = new Date((raw as number) * 1000);
+  }
+  if (Number.isNaN(d.getTime())) return "Invalid Date";
+  return d.toDateString();
+}
+
+function formatSessionTimeDisplay(s: any) {
+  const timeCandidate = s?.start_time ?? s?.startTime ?? s?.time ?? s?.startsAt;
+  if (!timeCandidate) return "Unknown time";
+  try {
+    const maybeDate = new Date(timeCandidate);
+    if (!Number.isNaN(maybeDate.getTime())) {
+      return maybeDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    }
+  } catch {}
+  return String(timeCandidate);
 }
 
 function BookingModal({
@@ -73,9 +133,9 @@ function BookingModal({
       <div className={`bp-modal-panel ${open ? "open" : ""}`} onClick={(e) => e.stopPropagation()}>
         <h3 style={{ margin: 0, marginBottom: 8 }}>Confirm booking</h3>
         <p style={{ marginTop: 0, marginBottom: 12, color: "#555" }}>
-          {session.title}
+          {session?.title}
           <br />
-          {new Date(session.session_date).toDateString()} at {session.start_time}
+          {formatSessionDateDisplay(session)} at {formatSessionTimeDisplay(session)}
         </p>
 
         <div style={{ marginBottom: 12 }}>
@@ -94,19 +154,11 @@ function BookingModal({
         </div>
 
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <button
-            onClick={onCancel}
-            className="bp-btn bp-btn-ghost"
-            disabled={loading}
-          >
+          <button onClick={onCancel} className="bp-btn bp-btn-ghost" disabled={loading}>
             Cancel
           </button>
 
-          <button
-            onClick={onConfirm}
-            className="bp-btn bp-btn-primary"
-            disabled={loading}
-          >
+          <button onClick={onConfirm} className="bp-btn bp-btn-primary" disabled={loading}>
             {loading ? "Booking..." : `Confirm (${seats.length})`}
           </button>
         </div>
@@ -115,7 +167,7 @@ function BookingModal({
   );
 }
 
-function BookingPage() {
+export default function BookingPage() {
   const { id } = useParams();
   const sessionId = Number(id);
 
@@ -139,13 +191,22 @@ function BookingPage() {
     setLoading(true);
     fetchSessionByIdRemote(sessionId)
       .then((data) => {
-        if (data && Array.isArray(data.bookedSeats)) {
-          data.bookedSeats = data.bookedSeats.map((b: any) => Number(b));
-        }
-        setSession(data);
+        console.log("Fetched session raw:", data);
+
+        const bookedSeatsArray = normalizeBookedSeatsFromApi(data);
+        const capacityNum = normalizeCapacityFromApi(data);
+
+        const normalizedSession: Session = {
+          ...data,
+          capacity: capacityNum,
+          bookedSeats: bookedSeatsArray,
+        };
+
+        setSession(normalizedSession);
         setLoading(false);
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error("Failed fetching session:", err);
         setLoading(false);
       });
   }, [id, sessionId]);
@@ -247,7 +308,12 @@ function BookingPage() {
   if (loading) return <p>Loading session...</p>;
   if (!session) return <p>Session not found.</p>;
 
-  const slotsLeft = session.capacity - (session.bookedSeats || []).length;
+  const slotsLeft = (() => {
+    const cap = toNumberSafe(session.capacity, 0);
+    const booked = Array.isArray(session.bookedSeats) ? session.bookedSeats.length : 0;
+    const remaining = cap - booked;
+    return Number.isFinite(remaining) ? remaining : 0;
+  })();
 
   return (
     <div className="bp-page">
@@ -255,7 +321,7 @@ function BookingPage() {
         <div>
           <h1 style={{ margin: 0 }}>Booking: {session.title}</h1>
           <p style={{ margin: "4px 0 0 0", color: "#555" }}>
-            {new Date(session.session_date).toDateString()} at {session.start_time}
+            {formatSessionDateDisplay(session)} at {formatSessionTimeDisplay(session)}
           </p>
         </div>
 
@@ -268,7 +334,7 @@ function BookingPage() {
       <h2 style={{ marginTop: 18 }}>Choose your spot (up to {maxSelectable})</h2>
 
       <div className="seat-grid" aria-label="Seat selection">
-        {Array.from({ length: session.capacity }).map((_, i) => {
+        {Array.from({ length: toNumberSafe(session.capacity, 0) }).map((_, i) => {
           const seatNum = i + 1;
           const isBooked = (session.bookedSeats || []).includes(seatNum);
           const isSelected = selectedSeats.includes(seatNum);
@@ -289,8 +355,14 @@ function BookingPage() {
             >
               <span className="seat-label">{seatNum}</span>
 
-              {isSelected && !isBooked && <span className="seat-badge" aria-hidden>✓</span>}
-              {isBooked && <span className="seat-badge seat-badge-booked" aria-hidden>×</span>}
+              {isSelected && !isBooked && <span className="seat-badge" aria-hidden>
+                ✓
+              </span>}
+              {isBooked && (
+                <span className="seat-badge seat-badge-booked" aria-hidden>
+                  ×
+                </span>
+              )}
             </button>
           );
         })}
@@ -298,12 +370,7 @@ function BookingPage() {
 
       {selectedSeats.length > 0 && (
         <div style={{ marginTop: 18 }}>
-          <button
-            onClick={openConfirmModal}
-            className="bp-btn bp-btn-primary"
-            disabled={confirmLoading}
-            aria-disabled={confirmLoading}
-          >
+          <button onClick={openConfirmModal} className="bp-btn bp-btn-primary" disabled={confirmLoading} aria-disabled={confirmLoading}>
             Confirm seat{selectedSeats.length > 1 ? "s" : ""} ({selectedSeats.join(", ")})
           </button>
         </div>
@@ -331,5 +398,3 @@ function BookingPage() {
     </div>
   );
 }
-
-export default BookingPage;
