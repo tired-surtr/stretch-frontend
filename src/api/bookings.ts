@@ -1,6 +1,5 @@
 const API_BASE = process.env.REACT_APP_BACKEND_URL!;
 
-
 export type BookingResponse =
   | {
       status: "CONFIRMED";
@@ -18,14 +17,21 @@ export type BookingResponse =
       message: string;
     };
 
+function getToken() {
+  return localStorage.getItem("APP_TOKEN");
+}
+
 export async function createBooking(
   sessionId: number,
   seatNumber: number
 ): Promise<BookingResponse> {
+  const token = getToken();
+
   const res = await fetch(`${API_BASE}/api/bookings`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({
       session_id: sessionId,
@@ -34,14 +40,11 @@ export async function createBooking(
   });
 
   if (!res.ok) {
-    // if conflict or other error
     let message = "Failed to create booking";
     try {
       const data = await res.json();
       if (data?.message) message = data.message;
-    } catch {
-      // ignore JSON parse errors
-    }
+    } catch {}
     return {
       status: "FAILED",
       message,

@@ -1,0 +1,277 @@
+/* Soft pastel palette */
+@import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+
+:root {
+  --pastel-bg: #faf7ff;
+  --pastel-nav: #f0ebff;
+  --text-main: #333;
+  --accent: #8b6ef7;       /* used for logo fill */
+  --accent-dark: #5e3be0;  /* used for darker accents */
+  --muted: #6b6b78;
+
+  /* logo glow controls (updated by JS) */
+  --logo-glow: 0;          /* 0..1 */
+  --logo-offset-x: 0px;
+  --logo-offset-y: 0px;
+}
+
+/* Wrapper around logo + navbar */
+.nav-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Logo bar */
+.logo-bar {
+  background: var(--pastel-bg);
+  padding: 18px 0;
+  text-align: center;
+  border-bottom: 1px solid #e6ddff;
+  position: relative; /* keep pointer events to track proximity */
+}
+
+/* Navigation row */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--pastel-nav);
+  padding: 12px 24px;
+  border-bottom: 1px solid #e3d9ff;
+}
+
+/* Links left side container */
+.nav-left {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+/* Strong, theme-consistent nav link styles */
+.nav-link {
+  text-decoration: none;
+  color: var(--text-main);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 8px 6px;
+  border-radius: 8px;
+  transition: color 150ms ease, background 150ms ease, transform 150ms ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Hover / focus states that stay within theme */
+.nav-link:hover,
+.nav-link:focus {
+  color: var(--accent-dark);
+  background: rgba(139,110,247,0.06);
+  transform: translateY(-2px);
+  outline: none;
+}
+
+/* Active/selected state hint (if you add active class) */
+.nav-link.active {
+  color: var(--accent-dark);
+  background: linear-gradient(180deg, rgba(139,110,247,0.10), rgba(139,110,247,0.04));
+  box-shadow: 0 6px 16px rgba(94,59,224,0.06);
+}
+
+/* Right side (profile / auth buttons) */
+.nav-right {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+
+.profile-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Silhouette / avatar icon container */
+.profile-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid #d8ccff;
+  background: #f7f2ff; /* soft lavender pastel */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  cursor: pointer;
+}
+
+/* SVG inside the icon uses accent color */
+.profile-icon svg {
+  stroke: var(--accent-dark);
+  width: 22px;
+  height: 22px;
+}
+
+/* focus / keyboard accessibility for avatar */
+.profile-icon:focus {
+  outline: 3px solid rgba(139,110,247,0.18);
+  outline-offset: 2px;
+  box-shadow: 0 4px 12px rgba(91,58,224,0.06);
+}
+
+/* Username near avatar */
+.username {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+/* Logout button */
+.logout-btn {
+  background: #fff;
+  border: 1px solid #d5c9ff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: 500;
+  transition: background 140ms ease, transform 120ms ease;
+}
+
+.logout-btn:hover {
+  background: #f4f0ff;
+  transform: translateY(-2px);
+}
+
+/* Avatar picker modal styles (used by NavBar component) */
+.avatar-picker-panel {
+  width: 420px;
+  max-width: 92%;
+  border-radius: 12px;
+  padding: 18px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(10,20,40,0.18);
+}
+
+.avatar-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.avatar-button {
+  height: 64px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.06);
+  background: rgba(255,255,255,0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: box-shadow 160ms, transform 160ms, border-color 160ms;
+}
+
+.avatar-button:hover,
+.avatar-button:focus {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px rgba(10,20,40,0.08);
+  border-color: rgba(91,58,224,0.12);
+  outline: none;
+}
+
+.avatar-button.selected {
+  border: 2px solid var(--accent-dark);
+  background: linear-gradient(180deg, rgba(139,110,247,0.12), rgba(139,110,247,0.06));
+  box-shadow: 0 10px 30px rgba(91,58,224,0.08);
+}
+
+.avatar-button .avatar-node {
+  width: 36px;
+  height: 36px;
+  display: inline-block;
+  color: var(--accent-dark);
+}
+
+.avatar-close-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+/* Helper class for auth links (when user not signed in) */
+.auth-links {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Hide username on very narrow screens to save space */
+@media (max-width: 420px) {
+  .navbar {
+    padding: 10px 12px;
+  }
+  .logo {
+    font-size: 28px;
+  }
+  .nav-link {
+    font-size: 15px;
+  }
+  .username {
+    display: none;
+  }
+}
+
+/* Ensure nav links remain theme-consistent even if other rules try to override */
+.navbar .nav-link {
+  color: var(--text-main) !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+}
+
+/* ---------- Logo (text wordmark) styles & neon glow ---------- */
+
+/* Text-based wordmark (replaces image) */
+.stretch-logo-text {
+  font-family: 'Pacifico', cursive;        /* script font to evoke Stake-style wordmark */
+  font-weight: 400;                       /* Pacifico uses normal weight */
+  letter-spacing: -1px;                   /* slightly tightened for connected look */
+  text-transform: none;                   /* respect capital S in "Stretch" */
+
+  font-size: 50px;                        /* keep same visual size */
+  line-height: 1;
+  color: var(--accent);
+
+  text-align: center;
+  display: inline-block;
+  margin: 0 auto;
+  padding: 0;                              /* remove padded box to resemble a wordmark */
+  border-radius: 0;
+
+  /* glow JS offset variables */
+  transform: translate(var(--logo-offset-x, 0px), var(--logo-offset-y, 0px));
+  transition: transform 200ms ease,
+              filter 200ms ease,
+              text-shadow 200ms ease;
+  will-change: transform, filter, text-shadow;
+
+  /* Keep a very subtle glow for interaction without blurring shape */
+  text-shadow: 0 0 calc(4px * var(--logo-glow)) rgba(139,110,247,0.12);
+
+  filter: drop-shadow(0 2px calc(6px * var(--logo-glow)) rgba(139,110,247,0.08));
+
+  cursor: default;
+}
+
+/* Hover boost */
+.stretch-logo-text:hover {
+  transform: translate(var(--logo-offset-x, 0px), var(--logo-offset-y, 0px)) scale(1.04);
+}

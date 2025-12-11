@@ -11,8 +11,15 @@ export type Session = {
   created_at: string;
 };
 
+function getToken() {
+  return localStorage.getItem("APP_TOKEN");
+}
+
 export async function fetchSessions(): Promise<Session[]> {
-  const res = await fetch(`${API_BASE}/api/sessions`);
+  const token = getToken();
+  const res = await fetch(`${API_BASE}/api/sessions`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
   if (!res.ok) {
     throw new Error("Failed to fetch sessions");
   }
@@ -20,7 +27,10 @@ export async function fetchSessions(): Promise<Session[]> {
 }
 
 export async function fetchSessionById(id: number): Promise<Session & { bookedSeats: number[] }> {
-  const res = await fetch(`${API_BASE}/api/sessions/${id}`);
+  const token = getToken();
+  const res = await fetch(`${API_BASE}/api/sessions/${id}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
   if (!res.ok) {
     throw new Error("Failed to fetch session");
   }
@@ -31,16 +41,18 @@ export type CreateSessionPayload = {
   title: string;
   description?: string;
   session_date: string; // "2025-12-11"
-  start_time: string;   // "18:00"
+  start_time: string; // "18:00"
   duration_minutes: number;
   capacity: number;
 };
 
 export async function createSession(payload: CreateSessionPayload) {
+  const token = getToken();
   const res = await fetch(`${API_BASE}/api/sessions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify(payload),
   });

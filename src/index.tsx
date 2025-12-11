@@ -3,6 +3,8 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { AppProvider } from "./context/AppContext";
+import { AuthProvider } from "./context/AuthContext"; // <-- add this
+import "./global.css";
 
 
 const root = ReactDOM.createRoot(
@@ -10,9 +12,11 @@ const root = ReactDOM.createRoot(
 );
 
 root.render(
-  <BrowserRouter>
-    <AppProvider>
-      <App />
-    </AppProvider>
-  </BrowserRouter>
+  <AuthProvider>
+    <BrowserRouter>
+      <AppProvider>
+        <App />
+      </AppProvider>
+    </BrowserRouter>
+  </AuthProvider>
 );

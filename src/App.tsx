@@ -1,65 +1,73 @@
+// src/App.tsx
 import React from "react";
-import { Routes, Route, Link } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useAppContext } from "./context/AppContext";
 import BookingPage from "./components/BookingPage";
 import AdminPage from "./components/AdminPage";
+import BookingHistory from "./components/BookingHistory";
+import LoginPage from "./pages/LoginPage";
+import RequireAuth from "./components/RequireAuth";
+import SignupPage from "./pages/SignupPage";
+import { useAuth } from "./context/AuthContext";
+import NavBar from "./components/NavBar";
+import SessionTiles from "./components/SessionTiles";
 
 function App() {
-  const { sessions, loading, role, setRole } = useAppContext();
+  const { sessions, loading } = useAppContext();
+  const { user } = useAuth();
 
   if (loading) {
     return <p>Loading sessions...</p>;
   }
 
+  const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+    if (!user) return <Navigate to="/login" replace />;
+    if ((user.role || "").toUpperCase() !== "ADMIN") return <Navigate to="/" replace />;
+    return <>{children}</>;
+  };
+
   return (
     <div>
-      <h1>Stretch</h1>
-      <p>Welcome. View your upcoming physio sessions.</p>
+      <NavBar />
 
-      <div style={{ marginBottom: "12px" }}>
-        <span style={{ marginRight: "8px" }}>
-          Viewing as: <strong>{role}</strong>
-        </span>
-        <button onClick={() => setRole("USER")} style={{ marginRight: "4px" }}>
-          User
-        </button>
-        <button onClick={() => setRole("ADMIN")}>Admin</button>
-      </div>
+      <main style={{ padding: "28px", maxWidth: 900, margin: "0 auto" }}>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <div>
+                <h2 style={{ marginBottom: 16 }}>Available Sessions</h2>
+                <SessionTiles />
+              </div>
+            }
+          />
 
-      <nav style={{ marginBottom: "16px" }}>
-        <Link to="/" style={{ marginRight: "12px" }}>
-          User view
-        </Link>
-        <Link to="/admin">Admin</Link>
-      </nav>
+          <Route
+            path="/my-bookings"
+            element={
+              <RequireAuth>
+                <BookingHistory />
+              </RequireAuth>
+            }
+          />
 
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <div>
-              <h2>Available Sessions</h2>
-              {sessions.length === 0 ? (
-                <p>No sessions found.</p>
-              ) : (
-                <ul>
-                  {sessions.map((s) => (
-                    <li key={s.id}>
-                      <Link to={`/booking/${s.id}`}>
-                        <strong>{s.title}</strong>
-                      </Link>{" "}
-                      – {s.start_time} on{" "}
-                      {new Date(s.session_date).toDateString()}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          }
-        />
-        <Route path="/booking/:id" element={<BookingPage />} />
-        <Route path="/admin" element={<AdminPage />} />
-      </Routes>
+          <Route path="/booking/:id" element={<BookingPage />} />
+
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminPage />
+              </AdminRoute>
+            }
+          />
+
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
     </div>
   );
 }

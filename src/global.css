@@ -1,0 +1,25 @@
+/* Global pastel UI theme */
+
+body {
+  margin: 0;
+  font-family: "Inter", system-ui, sans-serif;
+  background: #faf7ff;
+  color: #333;
+}
+
+h1, h2, h3 {
+  color: #3e2e7e;
+}
+
+input, button {
+  font-family: inherit;
+}
+
+.page-container {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 24px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}

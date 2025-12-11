@@ -1,105 +1,166 @@
+// src/components/AdminPage.tsx
 import React, { useState } from "react";
-import { createSession } from "../api/sessions";
-import { Link } from "react-router-dom";
+import axios from "axios";
+import { useAuth } from "../context/AuthContext";
 
-function AdminPage() {
+/**
+ * AdminPage – allows admin users to create sessions.
+ * Matches backend:
+ * POST /api/sessions expects:
+ *   { title, description, session_date, start_time, duration_minutes, capacity }
+ */
+
+export default function AdminPage() {
+  const { user, token } = useAuth();
+
+  // Accept role values in any case, backend stores e.g. 'ADMIN' or 'USER'
+  const isAdmin = (user?.role || "").toString().toUpperCase() === "ADMIN";
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [sessionDate, setSessionDate] = useState("");
   const [startTime, setStartTime] = useState("");
-  const [duration, setDuration] = useState(30);
-  const [capacity, setCapacity] = useState(6);
-  const [message, setMessage] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState<number>(60);
+  const [capacity, setCapacity] = useState<number>(20);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  if (!isAdmin) {
+    return (
+      <div style={{ maxWidth: 720, margin: "32px auto", padding: 18 }}>
+        <h2>Admin</h2>
+        <p>
+          You must be signed in as an <strong>admin</strong> to access this page.
+        </p>
+
+        <p>
+          Your account:{" "}
+          {user ? `${user.name || user.email} (${user.role ?? "USER"})` : "Not signed in"}
+        </p>
+      </div>
+    );
+  }
+
+  const submitSession = async () => {
+    setLoading(true);
+    setErr(null);
+    setMsg(null);
+
+    // Basic client-side validation
+    if (!title || !sessionDate || !startTime || !capacity) {
+      setErr("Title, date, time and capacity are required.");
+      setLoading(false);
+      return;
+    }
 
     try {
-      await createSession({
+      // Use field names the server expects
+      const payload = {
         title,
-        description,
+        description: description || null,
         session_date: sessionDate,
         start_time: startTime,
-        duration_minutes: duration,
+        duration_minutes: durationMinutes,
         capacity,
+      };
+
+      // axios already has Authorization header from AuthContext, but keep explicit option if needed
+      await axios.post("/api/sessions", payload, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
 
-      setMessage("Session created successfully!");
+      setMsg("Session created successfully!");
       setTitle("");
       setDescription("");
       setSessionDate("");
       setStartTime("");
-      setDuration(30);
-      setCapacity(6);
-
-    } catch (err) {
-      setMessage("Failed to create session.");
+      setDurationMinutes(60);
+      setCapacity(20);
+    } catch (e: any) {
+      setErr(e.response?.data?.message || "Failed to create session");
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <div>
-      <h1>Admin Panel</h1>
-      <p>Create a new physio session</p>
+    <div style={{ maxWidth: 680, margin: "32px auto", padding: 16 }}>
+      <h2>Create New Session</h2>
 
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", maxWidth: "300px", gap: "10px" }}>
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ display: "block", marginBottom: 6 }}>Title</label>
         <input
-          type="text"
-          placeholder="Title"
           value={title}
-          required
           onChange={(e) => setTitle(e.target.value)}
+          style={{ width: "100%", padding: 8 }}
+          placeholder="Session title"
         />
+      </div>
 
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ display: "block", marginBottom: 6 }}>Description (optional)</label>
         <textarea
-          placeholder="Description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          rows={3}
+          style={{ width: "100%", padding: 8, minHeight: 80 }}
+          placeholder="Session description"
         />
-
-        <label>Date:</label>
-        <input
-          type="date"
-          value={sessionDate}
-          required
-          onChange={(e) => setSessionDate(e.target.value)}
-        />
-
-        <label>Start Time:</label>
-        <input
-          type="time"
-          value={startTime}
-          required
-          onChange={(e) => setStartTime(e.target.value)}
-        />
-
-        <label>Duration (minutes):</label>
-        <input
-          type="number"
-          value={duration}
-          required
-          onChange={(e) => setDuration(Number(e.target.value))}
-        />
-
-        <label>Capacity:</label>
-        <input
-          type="number"
-          value={capacity}
-          required
-          onChange={(e) => setCapacity(Number(e.target.value))}
-        />
-
-        <button type="submit">Create Session</button>
-      </form>
-
-      {message && <p>{message}</p>}
-
-      <div style={{ marginTop: "20px" }}>
-        <Link to="/">Back to sessions</Link>
       </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+        <div>
+          <label style={{ display: "block", marginBottom: 6 }}>Date</label>
+          <input
+            type="date"
+            value={sessionDate}
+            onChange={(e) => setSessionDate(e.target.value)}
+            style={{ width: "100%", padding: 8 }}
+          />
+        </div>
+
+        <div>
+          <label style={{ display: "block", marginBottom: 6 }}>Time</label>
+          <input
+            type="time"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            style={{ width: "100%", padding: 8 }}
+          />
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+        <div>
+          <label style={{ display: "block", marginBottom: 6 }}>Duration (minutes)</label>
+          <input
+            type="number"
+            value={durationMinutes}
+            onChange={(e) => setDurationMinutes(Number(e.target.value))}
+            style={{ width: "100%", padding: 8 }}
+            min={1}
+          />
+        </div>
+
+        <div>
+          <label style={{ display: "block", marginBottom: 6 }}>Capacity</label>
+          <input
+            type="number"
+            value={capacity}
+            onChange={(e) => setCapacity(Number(e.target.value))}
+            style={{ width: "100%", padding: 8 }}
+            min={1}
+          />
+        </div>
+      </div>
+
+      {msg && <p style={{ color: "green" }}>{msg}</p>}
+      {err && <p style={{ color: "red" }}>{err}</p>}
+
+      <button onClick={submitSession} disabled={loading} style={{ padding: "8px 14px", borderRadius: 6 }}>
+        {loading ? "Creating..." : "Create Session"}
+      </button>
     </div>
   );
 }
-
-export default AdminPage;

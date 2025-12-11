@@ -1,0 +1,183 @@
+/* BookingPage.css
+   Seat tiles styled to match glass session tiles:
+   - glass background
+   - hover lift + shadow
+   - selected / booked states
+   - accessible focus ring
+*/
+
+/* page layout helpers */
+.bp-page {
+  padding: 20px 36px;
+  max-width: 1100px;
+}
+
+/* header helper */
+.bp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+/* button styles used by modal / confirm */
+.bp-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+.bp-btn-ghost {
+  background: #fff;
+  border: 1px solid #ddd;
+}
+.bp-btn-primary {
+  background: #1976d2;
+  color: #fff;
+}
+
+/* modal overlay + panel (kept from inline styles but moved here for clarity) */
+.bp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.45);
+  z-index: 2000;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+.bp-modal-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.bp-modal-panel {
+  width: 420px;
+  max-width: 100%;
+  background: #fff;
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+  transform: translateY(8px) scale(0.985);
+  opacity: 0;
+  transition: transform 200ms cubic-bezier(.2,.9,.2,1), opacity 180ms ease;
+}
+.bp-modal-panel.open {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+.bp-modal-seat {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #4caf50;
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ---- seat grid ---- */
+.seat-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  max-width: 680px;
+  margin-top: 8px;
+}
+
+/* Base tile — glass card feel matching session tiles */
+.seat-tile {
+  width: 56px;
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  cursor: pointer;
+  user-select: none;
+  border: 1px solid rgba(0,0,0,0.06);
+  background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(245,245,249,0.95));
+  box-shadow: 0 10px 30px rgba(91,58,224,0.03);
+  transition: transform 180ms cubic-bezier(.2,.9,.25,1), box-shadow 180ms ease, background-color 160ms ease, filter 180ms ease;
+  position: relative;
+  outline: none;
+  color: var(--text-main, #111);
+  font-weight: 700;
+}
+
+/* small label within tile */
+.seat-tile .seat-label {
+  z-index: 2;
+}
+
+/* hover / lift — match session tile hover */
+.seat-tile:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 22px 48px rgba(91,58,224,0.06);
+}
+
+/* focus ring for keyboard nav */
+.seat-tile:focus {
+  box-shadow: 0 0 0 4px rgba(139,110,247,0.12);
+  transform: translateY(-6px);
+}
+
+/* selected state (green) */
+.seat-tile.selected {
+  background: linear-gradient(180deg, rgba(76,175,80,1), rgba(56,142,60,1));
+  color: #fff;
+  border: none;
+  box-shadow: 0 14px 40px rgba(0,0,0,0.12);
+  transform: translateY(-4px);
+}
+
+/* booked state (red / disabled) */
+.seat-tile.booked {
+  background: linear-gradient(180deg, #c62828, #b71c1c);
+  color: #fff;
+  cursor: not-allowed;
+  opacity: 0.98;
+  box-shadow: none;
+  transform: none;
+}
+
+/* badge for selected/booked (top-right) */
+.seat-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 12px;
+  background: #1976d2;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+  z-index: 3;
+}
+
+/* booked badge overrides */
+.seat-badge-booked {
+  background: #d32f2f;
+}
+
+/* disabled pointer events for HTML disabled attribute */
+.seat-tile[disabled] {
+  pointer-events: none;
+}
+
+/* responsiveness */
+@media (max-width: 600px) {
+  .seat-grid { gap: 10px; }
+  .seat-tile { width: 48px; height: 48px; border-radius: 10px; }
+}
