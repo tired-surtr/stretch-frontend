@@ -1,6 +1,7 @@
 // src/components/AdminPage.tsx
 import React, { useState } from "react";
-import axios from "axios";
+import api from "../api/api"; // <-- use api instance (not axios)
+
 import { useAuth } from "../context/AuthContext";
 
 /**
@@ -66,10 +67,8 @@ export default function AdminPage() {
         capacity,
       };
 
-      // axios already has Authorization header from AuthContext, but keep explicit option if needed
-      await axios.post("/api/sessions", payload, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
+      // Use api instance which already has baseURL and Authorization header
+      await api.post("/sessions", payload);
 
       setMsg("Session created successfully!");
       setTitle("");
