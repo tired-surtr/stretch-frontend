@@ -1,12 +1,12 @@
+// src/components/BookingHistory.tsx
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import api from "../api/api";
 
 /**
  * BookingHistory.tsx
- * - Fetches bookings for the current user (GET /api/bookings)
- * - Sends Authorization: Bearer <token>
- * - Shows each booking with session info
- * - If the session is in the past, draws a line-through on that row
+ * - Fetches bookings for the current user (GET /api/bookings) via api instance
+ * - Relies on api.defaults.headers.common['Authorization'] being set by AuthContext / startup
  */
 
 type Booking = {
@@ -36,29 +36,29 @@ export default function BookingHistory() {
 
     (async () => {
       try {
-        const token = localStorage.getItem("APP_TOKEN");
-        const res = await fetch(`${process.env.REACT_APP_BACKEND_URL ?? ""}/api/bookings`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        });
+        // Tell axios/TypeScript the expected response shape
+        const res = await api.get<Booking[]>("/bookings");
 
         if (!mounted) return;
 
+        // axios will throw on non-2xx, but double-check 401 case if needed
         if (res.status === 401) {
           setError("You must be signed in to view bookings.");
           setLoading(false);
           return;
         }
 
-        if (!res.ok) {
-          const text = await res.text();
-          throw new Error(text || "Failed to fetch bookings");
-        }
-
-        const data: Booking[] = await res.json();
+        const data: Booking[] = res.data;
         setBookings(data);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to load bookings:", err);
-        if (mounted) setError("Failed to load bookings.");
+        if (mounted) {
+          if (err?.response?.status === 401) {
+            setError("You must be signed in to view bookings.");
+          } else {
+            setError("Failed to load bookings.");
+          }
+        }
       } finally {
         if (mounted) setLoading(false);
       }
