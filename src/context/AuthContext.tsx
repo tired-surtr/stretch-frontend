@@ -1,21 +1,15 @@
 // src/context/AuthContext.tsx
 import React, { createContext, useState, useEffect, useContext } from "react";
-import axios from "axios";
-axios.defaults.baseURL = "http://localhost:5000";
+import api from "../api/api"; // <-- correct api instance
 
 /**
- * AuthContext aligned to your backend:
- * - POST /api/auth/register  => { ok: true, user }
- * - POST /api/auth/login     => { token, user }
- *
- * User fields follow your DB schema: id, name, email, role, (optional) profile_pic_url
+ * User interface (matches your backend user structure)
  */
-
 interface User {
   id: number;
   name?: string | null;
   email: string;
-  role?: string | null; // e.g. 'USER' or 'ADMIN'
+  role?: string | null;
   profile_pic_url?: string | null;
 }
 
@@ -55,56 +49,75 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   });
 
-  // keep axios auth header and localStorage in sync
+  /**
+   * Keep API Authorization header and localStorage synced
+   */
   useEffect(() => {
     if (token) {
-      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-      try {
-        localStorage.setItem("token", token);
-      } catch {}
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      localStorage.setItem("token", token);
     } else {
-      delete axios.defaults.headers.common["Authorization"];
-      try {
-        localStorage.removeItem("token");
-      } catch {}
+      delete api.defaults.headers.common["Authorization"];
+      localStorage.removeItem("token");
     }
 
     if (user) {
-      try {
-        localStorage.setItem("user", JSON.stringify(user));
-      } catch {}
+      localStorage.setItem("user", JSON.stringify(user));
     } else {
-      try {
-        localStorage.removeItem("user");
-      } catch {}
+      localStorage.removeItem("user");
     }
   }, [token, user]);
 
   /**
-   * Register -> backend returns { ok: true, user }
-   * We then call login() to get token and set user/token in context.
+   * SIGNUP
+   * Calls /auth/register (NOT /api/auth/register because api baseURL already includes /api)
    */
   const signup = async (data: { name?: string; email: string; password: string }) => {
-    // call register
-    const res = await axios.post<{ ok: boolean; user: User }>("/api/auth/register", data);
-    // if backend returned user but not token, sign them in automatically
+    const res = await api.post<{ ok: boolean; user: User }>(
+      "/auth/register",
+      data,
+      { withCredentials: true }
+    );
+
     if (res.data?.user) {
-      // call login to get token
+      // log them in immediately
       await login({ email: data.email, password: data.password });
       return;
     }
+
     throw new Error("Registration failed");
   };
 
   /**
-   * Login -> backend returns { token, user }
+   * LOGIN
+   * Calls /auth/login
+   * Backend returns: { token, user }
    */
   const login = async (data: { email: string; password: string }) => {
-    const res = await axios.post<{ token: string; user: User }>("/api/auth/login", data);
-    setToken(res.data.token);
-    setUser(res.data.user);
+    const res = await api.post<{ token?: string; user: User }>(
+      "/auth/login",
+      data,
+      { withCredentials: true }
+    );
+
+    if (res.data?.token) {
+      setToken(res.data.token);
+      api.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`;
+    } else {
+      setToken(null);
+      delete api.defaults.headers.common["Authorization"];
+    }
+
+    if (res.data?.user) {
+      setUser(res.data.user);
+    } else {
+      setUser(null);
+    }
   };
 
+  /**
+   * LOGOUT
+   */
   const logout = () => {
     setToken(null);
     setUser(null);
@@ -117,7 +130,4 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Convenience hook for components that previously imported `useAuth`
-export const useAuth = (): AuthContextType => {
-  return useContext(AuthContext);
-};
+export const useAuth = (): AuthContextType => useContext(AuthContext);
