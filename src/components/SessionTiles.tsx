@@ -1,7 +1,8 @@
 // src/components/SessionTiles.tsx
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
+import api from "../api/api";
+
 import { useAppContext } from "../context/AppContext";
 
 /**
@@ -207,7 +208,8 @@ export default function SessionTiles(): React.ReactElement {
       setRemainingById((prev) => ({ ...prev, ...init }));
 
       try {
-        const promises = ids.map((id) => axios.get<SessionDetail>(`/api/sessions/${id}`));
+        // <-- USE shared `api` instance here (was axios.get before)
+        const promises = ids.map((id) => api.get<SessionDetail>(`/sessions/${id}`));
         const results = await Promise.allSettled(promises);
 
         const newMap: Record<number, number | null> = {};
