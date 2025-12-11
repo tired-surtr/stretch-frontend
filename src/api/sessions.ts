@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE = process.env.REACT_APP_BACKEND_URL!;
 
 export type Session = {
   id: number;
@@ -12,7 +12,7 @@ export type Session = {
 };
 
 export async function fetchSessions(): Promise<Session[]> {
-  const res = await fetch(`${API_BASE_URL}/api/sessions`);
+  const res = await fetch(`${API_BASE}/api/sessions`);
   if (!res.ok) {
     throw new Error("Failed to fetch sessions");
   }
@@ -20,12 +20,13 @@ export async function fetchSessions(): Promise<Session[]> {
 }
 
 export async function fetchSessionById(id: number): Promise<Session & { bookedSeats: number[] }> {
-  const res = await fetch(`${API_BASE_URL}/api/sessions/${id}`);
+  const res = await fetch(`${API_BASE}/api/sessions/${id}`);
   if (!res.ok) {
     throw new Error("Failed to fetch session");
   }
   return res.json();
 }
+
 export type CreateSessionPayload = {
   title: string;
   description?: string;
@@ -36,7 +37,7 @@ export type CreateSessionPayload = {
 };
 
 export async function createSession(payload: CreateSessionPayload) {
-  const res = await fetch(`${API_BASE_URL}/api/sessions`, {
+  const res = await fetch(`${API_BASE}/api/sessions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

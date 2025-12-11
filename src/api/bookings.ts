@@ -1,4 +1,5 @@
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE = process.env.REACT_APP_BACKEND_URL!;
+
 
 export type BookingResponse =
   | {
@@ -21,7 +22,7 @@ export async function createBooking(
   sessionId: number,
   seatNumber: number
 ): Promise<BookingResponse> {
-  const res = await fetch(`${API_BASE_URL}/api/bookings`, {
+  const res = await fetch(`${API_BASE}/api/bookings`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
